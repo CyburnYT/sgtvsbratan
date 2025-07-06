@@ -1,121 +1,249 @@
-<!-- Ersetze den gesamten Script-Teil mit diesem aktualisierten Code -->
-<script>
-    // Game State
-    let gameState = {
-        tournament: null,
-        viewers: [],
-        teamBratan: [],
-        teamSgt: [],
-        currentBattle: null,
-        bracket: [],
-        currentRound: 0,
-        punishments: [],
-        isLoggedIn: false,
-        isAdmin: false,
-        tournamentStarted: false,
-        captains: {
-            bratan: null,
-            sgt: null
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gamblebratan Tournament System</title>
+    <style>
+        /* [Behalte dein bestehendes CSS hier - es bleibt komplett unverändert] */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-    };
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            color: white;
+            min-height: 100vh;
+        }
+        /* ... Rest deines CSS ... */
+    </style>
+</head>
+<body>
+    <!-- [Behalte dein bestehendes HTML-Markup hier] -->
+    <div class="login-container" id="loginContainer">
+        <div class="login-box">
+            <h1 class="login-title">GAMBLEBRATAN</h1>
+            <div class="input-group">
+                <label>Username:</label>
+                <input type="text" id="username" placeholder="Enter username">
+            </div>
+            <div class="input-group">
+                <label>Password:</label>
+                <input type="password" id="password" placeholder="Enter password">
+            </div>
+            <button class="btn" onclick="login()">LOGIN</button>
+            <button class="btn btn-secondary" onclick="showPublicBracket()">PUBLIC BRACKET</button>
+            <div id="loginError" class="error-message" style="display: none;"></div>
+        </div>
+    </div>
 
-    // API Helper
-    async function fetchData(action, data = {}) {
-        const response = await fetch(`api.php?action=${action}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(data)
-        });
-        return await response.json();
-    }
+    <!-- [Rest deines HTML bleibt gleich bis zum Script-Tag] -->
 
-    // Login System
-    async function login() {
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
-        
-        try {
-            const result = await fetchData('login', { username, password });
+    <script>
+        // Game State
+        let gameState = {
+            tournament: null,
+            viewers: [],
+            teamBratan: [],
+            teamSgt: [],
+            currentBattle: null,
+            bracket: [],
+            currentRound: 0,
+            punishments: [],
+            isLoggedIn: false,
+            isAdmin: false,
+            tournamentStarted: false,
+            captains: {
+                bratan: null,
+                sgt: null
+            }
+        };
+
+        // API Helper
+        async function fetchData(endpoint, data = {}) {
+            const response = await fetch(`http://localhost:3000/api/${endpoint}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': gameState.isLoggedIn ? `Bearer ${localStorage.getItem('token')}` : ''
+                },
+                body: JSON.stringify(data)
+            });
             
-            if (result.success) {
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Request failed');
+            }
+            
+            return await response.json();
+        }
+
+        // Login System
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const result = await fetchData('login', { username, password });
+                
+                localStorage.setItem('token', result.token);
                 gameState.isLoggedIn = true;
-                gameState.isAdmin = result.is_admin;
+                gameState.isAdmin = result.isAdmin;
+                
                 document.getElementById('loginContainer').style.display = 'none';
                 document.getElementById('mainContainer').style.display = 'block';
                 document.getElementById('loginError').style.display = 'none';
                 
-                // Load tournament data
                 await loadTournamentData();
-            } else {
-                document.getElementById('loginError').textContent = result.error || 'Invalid credentials!';
+            } catch (error) {
+                document.getElementById('loginError').textContent = error.message || 'Login failed';
                 document.getElementById('loginError').style.display = 'block';
             }
-        } catch (error) {
-            console.error('Login error:', error);
-            document.getElementById('loginError').textContent = 'Login failed. Please try again.';
-            document.getElementById('loginError').style.display = 'block';
         }
-    }
 
-    async function loadTournamentData() {
-        try {
-            const data = await fetchData('get_tournament');
-            
-            if (data.error) {
-                console.error(data.error);
-                return;
+        async function loadTournamentData() {
+            try {
+                const data = await fetchData('tournament/current');
+                
+                gameState.tournament = data.tournament;
+                gameState.viewers = data.players.filter(p => !p.team);
+                gameState.teamBratan = data.players.filter(p => p.team === 'bratan');
+                gameState.teamSgt = data.players.filter(p => p.team === 'sgt');
+                gameState.bracket = data.matches;
+                gameState.punishments = data.punishments;
+                gameState.currentRound = data.currentRound || 0;
+                gameState.tournamentStarted = gameState.bracket.length > 0;
+                
+                updateUI();
+                
+                if (gameState.tournamentStarted) {
+                    setupTournamentUI();
+                    const currentBattles = gameState.bracket.filter(b => b.round === gameState.currentRound && !b.winner);
+                    if (currentBattles.length > 0) {
+                        gameState.currentBattle = currentBattles[0];
+                        updateBattleDisplay();
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load tournament:', error);
             }
-            
-            gameState.tournament = data.tournament;
-            gameState.viewers = data.players.filter(p => !p.team);
-            gameState.teamBratan = data.players.filter(p => p.team === 'bratan');
-            gameState.teamSgt = data.players.filter(p => p.team === 'sgt');
-            gameState.bracket = data.matches;
-            gameState.punishments = data.punishments;
-            gameState.currentRound = data.current_round || 0;
-            gameState.tournamentStarted = gameState.bracket.length > 0;
-            
-            // Update UI
+        }
+
+        function updateUI() {
             updateViewerPool();
             updateTeamDisplays();
             updateBracketDisplay();
             updatePunishmentList();
+        }
+
+        function setupTournamentUI() {
+            document.getElementById('teamSize').style.display = 'none';
+            document.querySelector('#setup button[onclick="generateTeamSlots()"]').style.display = 'none';
+            document.getElementById('viewerName').style.display = 'none';
+            document.getElementById('viewerSlot').style.display = 'none';
+            document.getElementById('addViewerBtn').style.display = 'none';
+            document.getElementById('randomDrawBtn').style.display = 'none';
+            document.getElementById('startTournamentBtn').style.display = 'none';
             
-            if (gameState.tournamentStarted) {
-                // Hide setup elements
-                document.getElementById('teamSize').style.display = 'none';
-                document.querySelector('#setup button[onclick="generateTeamSlots()"]').style.display = 'none';
-                document.getElementById('viewerName').style.display = 'none';
-                document.getElementById('viewerSlot').style.display = 'none';
-                document.getElementById('addViewerBtn').style.display = 'none';
-                document.getElementById('randomDrawBtn').style.display = 'none';
-                document.getElementById('startTournamentBtn').style.display = 'none';
-                
-                // Change viewer pool title
-                const viewerPoolTitle = document.querySelector('.viewer-pool h3');
-                if (viewerPoolTitle) {
-                    viewerPoolTitle.textContent = 'Active Players - Edit Slots';
-                }
-                
-                // Hide viewer pool
-                document.getElementById('viewerPool').style.display = 'none';
-                
-                // Set current battle
-                const currentBattles = gameState.bracket.filter(b => 
-                    b.round === gameState.currentRound && !b.winner
-                );
-                
-                if (currentBattles.length > 0) {
-                    gameState.currentBattle = currentBattles[0];
-                    updateBattleDisplay();
+            const viewerPoolTitle = document.querySelector('.viewer-pool h3');
+            if (viewerPoolTitle) viewerPoolTitle.textContent = 'Active Players - Edit Slots';
+            
+            document.getElementById('viewerPool').style.display = 'none';
+        }
+
+        // Viewer Management
+        async function addViewer() {
+            const name = document.getElementById('viewerName').value.trim();
+            const slot = document.getElementById('viewerSlot').value.trim();
+            
+            if (name && slot) {
+                try {
+                    await fetchData('players/add', { name, slot });
+                    await loadTournamentData();
+                    document.getElementById('viewerName').value = '';
+                    document.getElementById('viewerSlot').value = '';
+                } catch (error) {
+                    alert(error.message);
                 }
             }
-        } catch (error) {
-            console.error('Error loading tournament data:', error);
         }
-    }
 
-    // Rest des Codes mit fetchData() Aufrufen anstelle von direkten Änderungen...
-</script>
+        async function assignToTeam(viewerId) {
+            try {
+                const viewer = gameState.viewers.find(v => v.id === viewerId) || 
+                              gameState.teamBratan.find(v => v.id === viewerId) || 
+                              gameState.teamSgt.find(v => v.id === viewerId);
+                
+                let newTeam = null;
+                if (!viewer.team) {
+                    newTeam = gameState.teamBratan.length < gameState.tournament.team_size ? 'bratan' : 'sgt';
+                }
+                
+                await fetchData('players/assign', { playerId: viewerId, team: newTeam });
+                await loadTournamentData();
+            } catch (error) {
+                alert(error.message);
+            }
+        }
+
+        // Tournament Management
+        async function startTournament() {
+            try {
+                await fetchData('tournament/start', { teamSize: gameState.tournament.team_size });
+                await loadTournamentData();
+                showTab('battle');
+            } catch (error) {
+                alert(error.message);
+            }
+        }
+
+        async function calculateBattle() {
+            const p1Cost = parseFloat(document.getElementById('player1Cost').value) || 0;
+            const p1Win = parseFloat(document.getElementById('player1Win').value) || 0;
+            const p2Cost = parseFloat(document.getElementById('player2Cost').value) || 0;
+            const p2Win = parseFloat(document.getElementById('player2Win').value) || 0;
+            
+            try {
+                await fetchData('matches/update', {
+                    matchId: gameState.currentBattle.id,
+                    player1Cost: p1Cost,
+                    player1Win: p1Win,
+                    player2Cost: p2Cost,
+                    player2Win: p2Win
+                });
+                
+                await loadTournamentData();
+                setupNextBattle();
+            } catch (error) {
+                alert(error.message);
+            }
+        }
+
+        // [Behalte den Rest deiner JavaScript-Funktionen bei, aber ersetze alle direkten State-Manipulationen mit fetchData() Aufrufen]
+
+        // Initialisierung
+        document.addEventListener('DOMContentLoaded', () => {
+            if (localStorage.getItem('token')) {
+                checkSession();
+            }
+        });
+
+        async function checkSession() {
+            try {
+                const result = await fetchData('auth/check');
+                gameState.isLoggedIn = true;
+                gameState.isAdmin = result.isAdmin;
+                document.getElementById('loginContainer').style.display = 'none';
+                document.getElementById('mainContainer').style.display = 'block';
+                await loadTournamentData();
+            } catch {
+                localStorage.removeItem('token');
+            }
+        }
+
+        // [Behalte alle deine bestehenden UI-Update-Funktionen wie updateViewerPool(), updateTeamDisplays() etc.]
+    </script>
+</body>
+</html>
