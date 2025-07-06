@@ -1,0 +1,1376 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stream Battle System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .login-box {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .login-title {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+            font-size: 2em;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .main-container {
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .phase-indicator {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            display: inline-block;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .setup-section, .battle-section, .mod-section {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .section-title {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            color: #333;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .form-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 600;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, #dc3545, #c82333);
+        }
+
+        .btn-success {
+            background: linear-gradient(45deg, #28a745, #20c997);
+        }
+
+        .btn-warning {
+            background: linear-gradient(45deg, #ffc107, #fd7e14);
+        }
+
+        .teams-container {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .team-box {
+            flex: 1;
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            padding: 20px;
+            border-radius: 15px;
+            border: 3px solid;
+        }
+
+        .team-bratan {
+            border-color: #007bff;
+        }
+
+        .team-sgt {
+            border-color: #dc3545;
+        }
+
+        .team-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 10px;
+            color: white;
+        }
+
+        .team-bratan .team-title {
+            background: linear-gradient(45deg, #007bff, #0056b3);
+        }
+
+        .team-sgt .team-title {
+            background: linear-gradient(45deg, #dc3545, #c82333);
+        }
+
+        .player-item {
+            background: white;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border-left: 4px solid;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            animation: slideIn 0.3s ease;
+        }
+
+        .team-bratan .player-item {
+            border-left-color: #007bff;
+        }
+
+        .team-sgt .player-item {
+            border-left-color: #dc3545;
+        }
+
+        .current-battle {
+            background: linear-gradient(45deg, #ffc107, #fd7e14);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .vs-display {
+            font-size: 2em;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+
+        .battle-input {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+
+        .battle-results {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .result-box {
+            flex: 1;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .winner {
+            background: linear-gradient(45deg, #28a745, #20c997);
+        }
+
+        .loser {
+            background: linear-gradient(45deg, #dc3545, #c82333);
+        }
+
+        .public-view {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+
+        .tournament-bracket {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .bracket-round {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .bracket-match {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #ddd;
+            min-width: 200px;
+            text-align: center;
+        }
+
+        .bracket-match.active {
+            border-color: #ffc107;
+            background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+        }
+
+        .match-info {
+            margin-bottom: 10px;
+        }
+
+        .match-players {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .match-slots {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .match-result {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.9em;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .participants-list {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .participant-item {
+            padding: 8px 12px;
+            margin-bottom: 5px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            border-left: 3px solid #667eea;
+        }
+
+        .lottery-section {
+            background: linear-gradient(135deg, #17a2b8, #138496);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+
+        .lottery-result {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .status-bar {
+            background: linear-gradient(45deg, #17a2b8, #138496);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        @media (max-width: 768px) {
+            .teams-container {
+                flex-direction: column;
+            }
+            
+            .battle-results {
+                flex-direction: column;
+            }
+            
+            .form-row {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="loginScreen" class="login-container">
+        <div class="login-box">
+            <h2 class="login-title">Stream Battle System</h2>
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" id="username" placeholder="Username eingeben">
+            </div>
+            <div class="form-group" style="margin-top: 15px;">
+                <label for="password">Passwort:</label>
+                <input type="password" id="password" placeholder="Passwort eingeben">
+            </div>
+            <button onclick="login()" style="width: 100%; margin-top: 20px;">Anmelden</button>
+            <div style="text-align: center; margin-top: 20px;">
+                <a href="#" onclick="showPublicView()" style="color: #667eea; text-decoration: none;">Zur öffentlichen Turnier-Ansicht</a>
+            </div>
+        </div>
+    </div>
+
+    <div id="mainApp" class="main-container hidden">
+        <div class="header">
+            <h1>Stream Battle System</h1>
+            <div class="phase-indicator" id="phaseIndicator">Setup Phase</div>
+            <div class="status-bar" id="statusBar">System bereit</div>
+            <button onclick="logout()" class="btn-danger">Abmelden</button>
+        </div>
+
+        <!-- Setup Section -->
+        <div id="setupSection" class="setup-section">
+            <h2 class="section-title">⚙️ Battle Setup</h2>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="teamSize">Team Größe:</label>
+                    <input type="number" id="teamSize" min="1" max="20" value="5" placeholder="Anzahl Spieler pro Team">
+                </div>
+                <div class="form-group">
+                    <label for="currentSlot">Aktuelle Slot:</label>
+                    <input type="text" id="currentSlot" placeholder="z.B. Book of Dead" value="Book of Dead">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <button onclick="startParticipation()" class="btn-success">Anmeldung starten</button>
+                <button onclick="resetAll()" class="btn-danger">Alles zurücksetzen</button>
+            </div>
+        </div>
+
+        <!-- Participation Section -->
+        <div id="participationSection" class="setup-section hidden">
+            <h2 class="section-title">🎯 Teilnehmer Anmeldung</h2>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="participantName">Teilnehmer manuell hinzufügen:</label>
+                    <input type="text" id="participantName" placeholder="Twitch Username">
+                </div>
+                <div class="form-group">
+                    <label for="participantSlot">Slot Name:</label>
+                    <input type="text" id="participantSlot" placeholder="z.B. Razor Shark">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <button onclick="addParticipant()" class="btn-success">Teilnehmer hinzufügen</button>
+                <button onclick="startLottery()" class="btn-warning">Auslosung starten</button>
+            </div>
+            
+            <div class="participants-list">
+                <h3>Angemeldete Teilnehmer (<span id="participantCount">0</span>):</h3>
+                <div id="participantsList"></div>
+            </div>
+        </div>
+
+        <!-- Lottery Section -->
+        <div id="lotterySection" class="lottery-section hidden">
+            <h2 class="section-title">🎲 Auslosung</h2>
+            <button onclick="drawWinners()" class="btn-success">Gewinner ziehen</button>
+            <div id="lotteryResult" class="lottery-result hidden">
+                <h3>Ausgeloste Spieler:</h3>
+                <div id="drawnPlayers"></div>
+            </div>
+        </div>
+
+        <!-- Team Assignment Section -->
+        <div id="teamAssignmentSection" class="setup-section hidden">
+            <h2 class="section-title">👥 Team Zuordnung</h2>
+            
+            <div class="teams-container">
+                <div class="team-box team-bratan">
+                    <div class="team-title">Team Bratan</div>
+                    <div id="teamBratanList"></div>
+                </div>
+                
+                <div class="team-box team-sgt">
+                    <div class="team-title">Team Sgt</div>
+                    <div id="teamSgtList"></div>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="unassignedPlayer">Nicht zugeordnete Spieler:</label>
+                    <select id="unassignedPlayer">
+                        <option value="">Spieler auswählen</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="targetTeam">Zielteam:</label>
+                    <select id="targetTeam">
+                        <option value="">Team auswählen</option>
+                        <option value="bratan">Team Bratan</option>
+                        <option value="sgt">Team Sgt</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <button onclick="assignPlayer()" class="btn-success">Spieler zuordnen</button>
+                <button onclick="startBattle()" class="btn-warning">Battle starten</button>
+            </div>
+        </div>
+
+        <!-- Battle Section -->
+        <div id="battleSection" class="battle-section hidden">
+            <h2 class="section-title">⚔️ Battle Arena</h2>
+            
+            <div class="current-battle">
+                <div id="currentBattleInfo">
+                    <div class="vs-display" id="vsDisplay">Bereit für Battle</div>
+                    <div id="currentSlotDisplay">Aktuelle Slot: <span id="battleSlot">-</span></div>
+                </div>
+            </div>
+            
+            <div class="battle-input">
+                <h3>Moderator Eingabe</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="player1Bet">Spieler 1 - Einsatz (€):</label>
+                        <input type="number" id="player1Bet" step="0.01" placeholder="z.B. 50.00">
+                    </div>
+                    <div class="form-group">
+                        <label for="player1Win">Spieler 1 - Gewinn (€):</label>
+                        <input type="number" id="player1Win" step="0.01" placeholder="z.B. 150.00">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="player2Bet">Spieler 2 - Einsatz (€):</label>
+                        <input type="number" id="player2Bet" step="0.01" placeholder="z.B. 50.00">
+                    </div>
+                    <div class="form-group">
+                        <label for="player2Win">Spieler 2 - Gewinn (€):</label>
+                        <input type="number" id="player2Win" step="0.01" placeholder="z.B. 75.00">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <button onclick="calculateBattle()" class="btn-success">Battle auswerten</button>
+                    <button onclick="nextRound()" class="btn-warning">Nächste Runde</button>
+                </div>
+            </div>
+            
+            <div id="battleResults" class="battle-results hidden">
+                <div id="result1" class="result-box">
+                    <div>Spieler 1</div>
+                    <div id="result1Info"></div>
+                </div>
+                <div id="result2" class="result-box">
+                    <div>Spieler 2</div>
+                    <div id="result2Info"></div>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="newSlot">Neue Slot für nächste Runde:</label>
+                    <input type="text" id="newSlot" placeholder="z.B. Gates of Olympus">
+                </div>
+                <div class="form-group">
+                    <button onclick="changeSlot()" class="btn-warning">Slot ändern</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tournament Overview -->
+        <div id="tournamentSection" class="public-view">
+            <h2 class="section-title">🏆 Turnier Übersicht</h2>
+            <div id="tournamentBracket" class="tournament-bracket">
+                <div class="bracket-round">
+                    <div class="bracket-match active">
+                        <div class="match-info">
+                            <div class="match-players">Warten auf Battle...</div>
+                            <div class="match-slots">Aktuelle Slot: <span id="tournamentSlot">-</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Public View -->
+    <div id="publicView" class="main-container hidden">
+        <div class="header">
+            <h1>🏆 Stream Battle Tournament</h1>
+            <div class="phase-indicator" id="publicPhaseIndicator">Turnier läuft</div>
+            <div class="status-bar" id="publicStatusBar">Live Tournament</div>
+            <button onclick="backToLogin()" class="btn-danger">Zurück</button>
+        </div>
+        
+        <div class="public-view">
+            <h2 class="section-title">Live Turnier Bracket</h2>
+            <div id="publicTournamentBracket" class="tournament-bracket">
+                <div class="bracket-round">
+                    <div class="bracket-match active">
+                        <div class="match-info">
+                            <div class="match-players">Team Bratan vs Team Sgt</div>
+                            <div class="match-slots">Aktuelle Slot: <span id="publicTournamentSlot">Warten auf Start...</span></div>
+                            <div class="match-result hidden" id="publicMatchResult">Warten auf Ergebnis...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="teams-container">
+            <div class="team-box team-bratan">
+                <div class="team-title">Team Bratan</div>
+                <div id="publicTeamBratanList">
+                    <div class="player-item">Warten auf Spieler...</div>
+                </div>
+            </div>
+            
+            <div class="team-box team-sgt">
+                <div class="team-title">Team Sgt</div>
+                <div id="publicTeamSgtList">
+                    <div class="player-item">Warten auf Spieler...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game State
+        let gameState = {
+            phase: 'setup', // setup, participation, lottery, team-assignment, battle
+            participants: [],
+            drawnPlayers: [],
+            teams: {
+                bratan: [],
+                sgt: []
+            },
+            currentBattle: null,
+            currentSlot: 'Book of Dead',
+            battleHistory: [],
+            eliminated: [],
+            round: 1
+        };
+
+        // Login System
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if (username === 'Bratan' && password === 'BratanPw') {
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('mainApp').classList.remove('hidden');
+                updateStatus('Erfolgreich angemeldet');
+                
+                // Versuche, gespeicherten Zustand zu laden
+                const loaded = await loadGameState();
+                if (loaded) {
+                    updateUIFromState();
+                }
+            } else {
+                alert('Ungültige Anmeldedaten!');
+            }
+        }
+
+        function logout() {
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('mainApp').classList.add('hidden');
+            document.getElementById('publicView').classList.add('hidden');
+        }
+
+        function showPublicView() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('publicView').classList.remove('hidden');
+            updatePublicView();
+        }
+
+        function backToLogin() {
+            document.getElementById('publicView').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+        }
+
+        // Phase Management
+        function setPhase(phase) {
+            gameState.phase = phase;
+            document.getElementById('phaseIndicator').textContent = getPhaseText(phase);
+            
+            // Hide all sections
+            document.querySelectorAll('.setup-section, .battle-section, .lottery-section').forEach(section => {
+                section.classList.add('hidden');
+            });
+            
+            // Show relevant section
+            switch(phase) {
+                case 'setup':
+                    document.getElementById('setupSection').classList.remove('hidden');
+                    break;
+                case 'participation':
+                    document.getElementById('participationSection').classList.remove('hidden');
+                    break;
+                case 'lottery':
+                    document.getElementById('lotterySection').classList.remove('hidden');
+                    break;
+                case 'team-assignment':
+                    document.getElementById('teamAssignmentSection').classList.remove('hidden');
+                    break;
+                case 'battle':
+                    document.getElementById('battleSection').classList.remove('hidden');
+                    break;
+            }
+            
+            updatePublicView();
+        }
+
+        function getPhaseText(phase) {
+            const phases = {
+                'setup': 'Setup Phase',
+                'participation': 'Anmeldung läuft',
+                'lottery': 'Auslosung',
+                'team-assignment': 'Team Zuordnung',
+                'battle': 'Battle läuft'
+            };
+            return phases[phase] || 'Unbekannte Phase';
+        }
+
+        // Participation Management
+        async function startParticipation() {
+            const teamSize = parseInt(document.getElementById('teamSize').value);
+            const currentSlot = document.getElementById('currentSlot').value;
+            
+            if (teamSize < 1 || teamSize > 20) {
+                alert('Team Größe muss zwischen 1 und 20 liegen!');
+                return;
+            }
+            
+            if (!currentSlot.trim()) {
+                alert('Bitte eine Slot angeben!');
+                return;
+            }
+            
+            gameState.teamSize = teamSize;
+            gameState.currentSlot = currentSlot;
+            gameState.participants = [];
+            
+            setPhase('participation');
+            updateStatus(`Anmeldung gestartet - Teams: ${teamSize} Spieler, Slot: ${currentSlot}`);
+            await saveGameState();
+        }
+
+        async function addParticipant() {
+            const name = document.getElementById('participantName').value.trim();
+            const slot = document.getElementById('participantSlot').value.trim();
+            
+            if (!name || !slot) {
+                alert('Bitte Name und Slot angeben!');
+                return;
+            }
+            
+            if (gameState.participants.some(p => p.name === name)) {
+                alert('Teilnehmer bereits angemeldet!');
+                return;
+            }
+            
+            gameState.participants.push({
+                name: name,
+                slot: slot,
+                team: null,
+                eliminated: false
+            });
+            
+            document.getElementById('participantName').value = '';
+            document.getElementById('participantSlot').value = '';
+            
+            updateParticipantsList();
+            updateStatus(`Teilnehmer hinzugefügt: ${name} (${slot})`);
+            await saveGameState();
+        }
+
+        function updateParticipantsList() {
+            const list = document.getElementById('participantsList');
+            const count = document.getElementById('participantCount');
+            
+            count.textContent = gameState.participants.length;
+            list.innerHTML = '';
+            
+            gameState.participants.forEach((participant, index) => {
+                const item = document.createElement('div');
+                item.className = 'participant-item';
+                item.innerHTML = `
+                    <strong>${participant.name}</strong> - ${participant.slot}
+                    <button onclick="removeParticipant(${index})" class="btn-danger" style="float: right; padding: 5px 10px;">Entfernen</button>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        async function removeParticipant(index) {
+            gameState.participants.splice(index, 1);
+            updateParticipantsList();
+            await saveGameState();
+        }
+
+        // Lottery System
+        function startLottery() {
+            const neededPlayers = gameState.teamSize * 2;
+            
+            if (gameState.participants.length < neededPlayers) {
+                alert(`Es werden mindestens ${neededPlayers} Teilnehmer benötigt!`);
+                return;
+            }
+            
+            setPhase('lottery');
+            updateStatus('Auslosung kann gestartet werden');
+        }
+
+        async function drawWinners() {
+            const neededPlayers = gameState.teamSize * 2;
+            const shuffled = [...gameState.participants].sort(() => Math.random() - 0.5);
+            
+            gameState.drawnPlayers = shuffled.slice(0, neededPlayers);
+            
+            const resultDiv = document.getElementById('lotteryResult');
+            const playersDiv = document.getElementById('drawnPlayers');
+            
+            resultDiv.classList.remove('hidden');
+            playersDiv.innerHTML = '';
+            
+            gameState.drawnPlayers.forEach((player, index) => {
+                const item = document.createElement('div');
+                item.className = 'participant-item';
+                item.innerHTML = `<strong>${player.name}</strong> - ${player.slot}`;
+                playersDiv.appendChild(item);
+            });
+            
+            setPhase('team-assignment');
+            updateUnassignedPlayers();
+            updateStatus(`${neededPlayers} Spieler ausgelost`);
+            await saveGameState();
+        }
+
+        // Team Assignment
+        function updateUnassignedPlayers() {
+            const select = document.getElementById('unassignedPlayer');
+            select.innerHTML = '<option value="">Spieler auswählen</option>';
+            
+            gameState.drawnPlayers.forEach((player, index) => {
+                if (!player.team) {
+                    const option = document.createElement('option');
+                    option.value = index;
+                    option.textContent = `${player.name} (${player.slot})`;
+                    select.appendChild(option);
+                }
+            });
+        }
+
+        async function assignPlayer() {
+            const playerIndex = parseInt(document.getElementById('unassignedPlayer').value);
+            const targetTeam = document.getElementById('targetTeam').value;
+            
+            if (isNaN(playerIndex) || !targetTeam) {
+                alert('Bitte Spieler und Team auswählen!');
+                return;
+            }
+            
+            const player = gameState.drawnPlayers[playerIndex];
+            
+            if (gameState.teams[targetTeam].length >= gameState.teamSize) {
+                alert('Team ist bereits voll!');
+                return;
+            }
+            
+            player.team = targetTeam;
+            gameState.teams[targetTeam].push(player);
+            
+            updateTeamDisplays();
+            updateUnassignedPlayers();
+            updateStatus(`${player.name} zu Team ${targetTeam} hinzugefügt`);
+            await saveGameState();
+            
+            // Check if all players assigned
+            const totalAssigned = gameState.teams.bratan.length + gameState.teams.sgt.length;
+            if (totalAssigned === gameState.drawnPlayers.length) {
+                updateStatus('Alle Spieler zugeordnet - Battle kann gestartet werden!');
+            }
+        }
+
+        function updateTeamDisplays() {
+            const bratanList = document.getElementById('teamBratanList');
+            const sgtList = document.getElementById('teamSgtList');
+            const publicBratanList = document.getElementById('publicTeamBratanList');
+            const publicSgtList = document.getElementById('publicTeamSgtList');
+            
+            // Update main view
+            bratanList.innerHTML = '';
+            sgtList.innerHTML = '';
+            
+            gameState.teams.bratan.forEach((player, index) => {
+                const item = document.createElement('div');
+                item.className = 'player-item';
+                item.innerHTML = `
+                    <div>
+                        <strong>${player.name}</strong><br>
+                        <small>${player.slot}</small>
+                    </div>
+                    <button onclick="removeFromTeam('bratan', ${index})" class="btn-danger" style="padding: 5px 10px;">Entfernen</button>
+                `;
+                bratanList.appendChild(item);
+            });
+            
+            gameState.teams.sgt.forEach((player, index) => {
+                const item = document.createElement('div');
+                item.className = 'player-item';
+                item.innerHTML = `
+                    <div>
+                        <strong>${player.name}</strong><br>
+                        <small>${player.slot}</small>
+                    </div>
+                    <button onclick="removeFromTeam('sgt', ${index})" class="btn-danger" style="padding: 5px 10px;">Entfernen</button>
+                `;
+                sgtList.appendChild(item);
+            });
+            
+            // Update public view
+            publicBratanList.innerHTML = '';
+            publicSgtList.innerHTML = '';
+            
+            gameState.teams.bratan.forEach(player => {
+                const item = document.createElement('div');
+                item.className = 'player-item';
+                item.innerHTML = `
+                    <div>
+                        <strong>${player.name}</strong><br>
+                        <small>${player.slot}</small>
+                        ${player.eliminated ? '<span style="color: red;"> (Eliminiert)</span>' : ''}
+                    </div>
+                `;
+                publicBratanList.appendChild(item);
+            });
+            
+            gameState.teams.sgt.forEach(player => {
+                const item = document.createElement('div');
+                item.className = 'player-item';
+                item.innerHTML = `
+                    <div>
+                        <strong>${player.name}</strong><br>
+                        <small>${player.slot}</small>
+                        ${player.eliminated ? '<span style="color: red;"> (Eliminiert)</span>' : ''}
+                    </div>
+                `;
+                publicSgtList.appendChild(item);
+            });
+        }
+
+        async function removeFromTeam(team, index) {
+            const player = gameState.teams[team][index];
+            player.team = null;
+            gameState.teams[team].splice(index, 1);
+            
+            updateTeamDisplays();
+            updateUnassignedPlayers();
+            updateStatus(`${player.name} aus Team ${team} entfernt`);
+            await saveGameState();
+        }
+
+        // Battle System
+        async function startBattle() {
+            const bratanAlive = gameState.teams.bratan.filter(p => !p.eliminated);
+            const sgtAlive = gameState.teams.sgt.filter(p => !p.eliminated);
+            
+            if (bratanAlive.length === 0 || sgtAlive.length === 0) {
+                alert('Mindestens ein Team hat keine Spieler mehr!');
+                return;
+            }
+            
+            if (gameState.teams.bratan.length < gameState.teamSize || gameState.teams.sgt.length < gameState.teamSize) {
+                alert('Teams sind nicht vollständig!');
+                return;
+            }
+            
+            setPhase('battle');
+            selectNextBattle();
+            updateStatus('Battle gestartet!');
+            await saveGameState();
+        }
+
+        function selectNextBattle() {
+            const bratanAlive = gameState.teams.bratan.filter(p => !p.eliminated);
+            const sgtAlive = gameState.teams.sgt.filter(p => !p.eliminated);
+            
+            if (bratanAlive.length === 0) {
+                endTournament('sgt');
+                return;
+            }
+            
+            if (sgtAlive.length === 0) {
+                endTournament('bratan');
+                return;
+            }
+            
+            // King of the Hill format - select random players from each team
+            const bratanPlayer = bratanAlive[Math.floor(Math.random() * bratanAlive.length)];
+            const sgtPlayer = sgtAlive[Math.floor(Math.random() * sgtAlive.length)];
+            
+            gameState.currentBattle = {
+                player1: bratanPlayer,
+                player2: sgtPlayer,
+                slot: gameState.currentSlot
+            };
+            
+            updateBattleDisplay();
+            updatePublicView();
+        }
+
+        function updateBattleDisplay() {
+            const vsDisplay = document.getElementById('vsDisplay');
+            const battleSlot = document.getElementById('battleSlot');
+            const tournamentSlot = document.getElementById('tournamentSlot');
+            const publicTournamentSlot = document.getElementById('publicTournamentSlot');
+            
+            if (gameState.currentBattle) {
+                vsDisplay.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="flex: 1; text-align: center;">
+                            <div style="color: #007bff; font-weight: bold;">${gameState.currentBattle.player1.name}</div>
+                            <div style="font-size: 0.8em; color: #666;">(Team Bratan)</div>
+                        </div>
+                        <div style="font-size: 1.5em; margin: 0 20px;">VS</div>
+                        <div style="flex: 1; text-align: center;">
+                            <div style="color: #dc3545; font-weight: bold;">${gameState.currentBattle.player2.name}</div>
+                            <div style="font-size: 0.8em; color: #666;">(Team Sgt)</div>
+                        </div>
+                    </div>
+                `;
+                
+                battleSlot.textContent = gameState.currentBattle.slot;
+                tournamentSlot.textContent = gameState.currentBattle.slot;
+                publicTournamentSlot.textContent = gameState.currentBattle.slot;
+            }
+        }
+
+        async function calculateBattle() {
+            const bet1 = parseFloat(document.getElementById('player1Bet').value);
+            const win1 = parseFloat(document.getElementById('player1Win').value);
+            const bet2 = parseFloat(document.getElementById('player2Bet').value);
+            const win2 = parseFloat(document.getElementById('player2Win').value);
+            
+            if (isNaN(bet1) || isNaN(win1) || isNaN(bet2) || isNaN(win2)) {
+                alert('Bitte alle Werte eingeben!');
+                return;
+            }
+            
+            if (bet1 <= 0 || bet2 <= 0) {
+                alert('Einsätze müssen größer als 0 sein!');
+                return;
+            }
+            
+            // Calculate multipliers
+            const multiplier1 = win1 / bet1;
+            const multiplier2 = win2 / bet2;
+            
+            let winner, loser;
+            
+            if (multiplier1 > multiplier2) {
+                winner = gameState.currentBattle.player1;
+                loser = gameState.currentBattle.player2;
+            } else if (multiplier2 > multiplier1) {
+                winner = gameState.currentBattle.player2;
+                loser = gameState.currentBattle.player1;
+            } else {
+                // Tie - random winner
+                if (Math.random() < 0.5) {
+                    winner = gameState.currentBattle.player1;
+                    loser = gameState.currentBattle.player2;
+                } else {
+                    winner = gameState.currentBattle.player2;
+                    loser = gameState.currentBattle.player1;
+                }
+            }
+            
+            // Mark loser as eliminated
+            loser.eliminated = true;
+            
+            // Update battle results display
+            const resultsDiv = document.getElementById('battleResults');
+            const result1 = document.getElementById('result1');
+            const result2 = document.getElementById('result2');
+            const result1Info = document.getElementById('result1Info');
+            const result2Info = document.getElementById('result2Info');
+            
+            result1Info.innerHTML = `
+                <div>${gameState.currentBattle.player1.name}</div>
+                <div>Einsatz: ${bet1.toFixed(2)}€</div>
+                <div>Gewinn: ${win1.toFixed(2)}€</div>
+                <div>Multiplikator: ${multiplier1.toFixed(2)}x</div>
+            `;
+            
+            result2Info.innerHTML = `
+                <div>${gameState.currentBattle.player2.name}</div>
+                <div>Einsatz: ${bet2.toFixed(2)}€</div>
+                <div>Gewinn: ${win2.toFixed(2)}€</div>
+                <div>Multiplikator: ${multiplier2.toFixed(2)}x</div>
+            `;
+            
+            // Style winner/loser
+            if (winner === gameState.currentBattle.player1) {
+                result1.className = 'result-box winner';
+                result2.className = 'result-box loser';
+            } else {
+                result1.className = 'result-box loser';
+                result2.className = 'result-box winner';
+            }
+            
+            resultsDiv.classList.remove('hidden');
+            
+            // Store battle result
+            gameState.battleHistory.push({
+                round: gameState.round,
+                player1: gameState.currentBattle.player1.name,
+                player2: gameState.currentBattle.player2.name,
+                slot: gameState.currentBattle.slot,
+                bet1: bet1,
+                win1: win1,
+                bet2: bet2,
+                win2: win2,
+                multiplier1: multiplier1,
+                multiplier2: multiplier2,
+                winner: winner.name,
+                loser: loser.name
+            });
+            
+            updateTeamDisplays();
+            updatePublicView();
+            updateStatus(`Battle beendet! ${winner.name} gewinnt mit ${(winner === gameState.currentBattle.player1 ? multiplier1 : multiplier2).toFixed(2)}x`);
+            
+            // Clear input fields
+            document.getElementById('player1Bet').value = '';
+            document.getElementById('player1Win').value = '';
+            document.getElementById('player2Bet').value = '';
+            document.getElementById('player2Win').value = '';
+            
+            await saveGameState();
+        }
+
+        async function nextRound() {
+            gameState.round++;
+            gameState.currentBattle = null;
+            
+            // Hide battle results
+            document.getElementById('battleResults').classList.add('hidden');
+            
+            // Select next battle
+            selectNextBattle();
+            
+            updateStatus(`Runde ${gameState.round} - Nächstes Battle bereit`);
+            await saveGameState();
+        }
+
+        async function changeSlot() {
+            const newSlot = document.getElementById('newSlot').value.trim();
+            
+            if (!newSlot) {
+                alert('Bitte eine neue Slot angeben!');
+                return;
+            }
+            
+            gameState.currentSlot = newSlot;
+            
+            if (gameState.currentBattle) {
+                gameState.currentBattle.slot = newSlot;
+                updateBattleDisplay();
+            }
+            
+            document.getElementById('newSlot').value = '';
+            updateStatus(`Slot geändert zu: ${newSlot}`);
+            await saveGameState();
+        }
+
+        function endTournament(winningTeam) {
+            const teamName = winningTeam === 'bratan' ? 'Team Bratan' : 'Team Sgt';
+            
+            updateStatus(`🏆 TURNIER BEENDET! ${teamName} gewinnt!`);
+            
+            // Update displays
+            document.getElementById('vsDisplay').innerHTML = `
+                <div style="text-align: center;">
+                    <div style="font-size: 2em; color: gold;">🏆</div>
+                    <div style="font-size: 1.5em; font-weight: bold; margin: 10px 0;">TURNIER BEENDET!</div>
+                    <div style="font-size: 1.2em; color: ${winningTeam === 'bratan' ? '#007bff' : '#dc3545'};">
+                        ${teamName} gewinnt!
+                    </div>
+                </div>
+            `;
+            
+            updatePublicView();
+        }
+
+        // Public View Updates
+        function updatePublicView() {
+            const publicPhaseIndicator = document.getElementById('publicPhaseIndicator');
+            const publicStatusBar = document.getElementById('publicStatusBar');
+            const publicMatchResult = document.getElementById('publicMatchResult');
+            
+            if (publicPhaseIndicator) {
+                publicPhaseIndicator.textContent = getPhaseText(gameState.phase);
+            }
+            
+            if (publicStatusBar) {
+                publicStatusBar.textContent = `Runde ${gameState.round} - ${gameState.currentSlot}`;
+            }
+            
+            // Update public tournament bracket
+            const publicBracket = document.getElementById('publicTournamentBracket');
+            if (publicBracket && gameState.currentBattle) {
+                publicBracket.innerHTML = `
+                    <div class="bracket-round">
+                        <div class="bracket-match active">
+                            <div class="match-info">
+                                <div class="match-players">
+                                    <span style="color: #007bff; font-weight: bold;">${gameState.currentBattle.player1.name}</span>
+                                    <span style="margin: 0 10px;">VS</span>
+                                    <span style="color: #dc3545; font-weight: bold;">${gameState.currentBattle.player2.name}</span>
+                                </div>
+                                <div class="match-slots">Slot: ${gameState.currentBattle.slot}</div>
+                                <div class="match-result">Runde ${gameState.round}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Update team displays in public view
+            updateTeamDisplays();
+        }
+
+        // Utility Functions
+        function updateStatus(message) {
+            const statusBar = document.getElementById('statusBar');
+            const publicStatusBar = document.getElementById('publicStatusBar');
+            
+            if (statusBar) {
+                statusBar.textContent = message;
+            }
+            
+            if (publicStatusBar) {
+                publicStatusBar.textContent = message;
+            }
+            
+            console.log(`[${new Date().toLocaleTimeString()}] ${message}`);
+        }
+
+        async function resetAll() {
+            if (!confirm('Wirklich alles zurücksetzen?')) {
+                return;
+            }
+            
+            gameState = {
+                phase: 'setup',
+                participants: [],
+                drawnPlayers: [],
+                teams: {
+                    bratan: [],
+                    sgt: []
+                },
+                currentBattle: null,
+                currentSlot: 'Book of Dead',
+                battleHistory: [],
+                eliminated: [],
+                round: 1
+            };
+            
+            setPhase('setup');
+            updateStatus('System zurückgesetzt');
+            
+            // Reset form values
+            document.getElementById('teamSize').value = 5;
+            document.getElementById('currentSlot').value = 'Book of Dead';
+            document.getElementById('participantName').value = '';
+            document.getElementById('participantSlot').value = '';
+            document.getElementById('newSlot').value = '';
+            
+            // Clear displays
+            document.getElementById('participantsList').innerHTML = '';
+            document.getElementById('participantCount').textContent = '0';
+            document.getElementById('drawnPlayers').innerHTML = '';
+            document.getElementById('lotteryResult').classList.add('hidden');
+            document.getElementById('battleResults').classList.add('hidden');
+            
+            updateTeamDisplays();
+            updatePublicView();
+            await saveGameState();
+        }
+
+        // API Helper Functions
+        async function saveGameState() {
+            try {
+                const response = await fetch('http://localhost:3001/save-state', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(gameState),
+                });
+                const data = await response.text();
+                console.log('State saved:', data);
+                return true;
+            } catch (error) {
+                console.error('Fehler beim Speichern:', error);
+                return false;
+            }
+        }
+
+        async function loadGameState() {
+            try {
+                const response = await fetch('http://localhost:3001/load-state');
+                const data = await response.json();
+                
+                if (data) {
+                    gameState = data;
+                    console.log('State loaded:', gameState);
+                    return true;
+                }
+                return false;
+            } catch (error) {
+                console.error('Fehler beim Laden:', error);
+                return false;
+            }
+        }
+
+        function updateUIFromState() {
+            setPhase(gameState.phase);
+            updateParticipantsList();
+            updateTeamDisplays();
+            updateBattleDisplay();
+            updateStatus(`Status geladen: Runde ${gameState.round}`);
+            
+            if (gameState.phase === 'battle' && gameState.currentBattle) {
+                document.getElementById('battleSection').classList.remove('hidden');
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async function() {
+            setPhase('setup');
+            updateStatus('System bereit');
+            
+            // Autosave alle 10 Sekunden
+            setInterval(async () => {
+                if (gameState.phase !== 'setup') {
+                    await saveGameState();
+                    updateStatus(`Autosave: ${new Date().toLocaleTimeString()}`);
+                }
+            }, 10000);
+            
+            // Public View Auto-Update
+            setInterval(updatePublicView, 5000);
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                if (gameState.phase === 'battle') {
+                    calculateBattle();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
