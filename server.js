@@ -2,14 +2,20 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
+const path = require('path');
 
+// Express-App initialisieren
 const app = express();
+
+// Middleware
 app.use(cors());
 app.use(bodyParser.json());
+app.use(express.static(path.join(__dirname, 'public'))); // Statische Dateien
 
-const db = new sqlite3.Database('./battle.db');
+// Datenbankverbindung
+const db = new sqlite3.Database(process.env.DATABASE_URL || './battle.db');
 
-// Initialisiere Datenbank
+// Datenbank-Setup
 db.serialize(() => {
   db.run(`
     CREATE TABLE IF NOT EXISTS game_state (
@@ -27,7 +33,7 @@ db.serialize(() => {
   `);
 });
 
-// Speichere Game State
+// API-Endpunkte
 app.post('/save-state', (req, res) => {
   const state = req.body;
   const data = [
@@ -42,13 +48,12 @@ app.post('/save-state', (req, res) => {
     state.round
   ];
 
-  // Lösche alte Einträge, um die Tabelle klein zu halten
   db.run(`DELETE FROM game_state`, (err) => {
-    if (err) console.error('Fehler beim Löschen alter Einträge:', err);
+    if (err) console.error('Fehler beim Löschen:', err);
     
-    // Füge neuen Eintrag hinzu
     db.run(`
-      INSERT INTO game_state (phase, participants, drawn_players, teams, current_battle, current_slot, battle_history, eliminated, round)
+      INSERT INTO game_state 
+      (phase, participants, drawn_players, teams, current_battle, current_slot, battle_history, eliminated, round)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, data, (err) => {
       if (err) return res.status(500).send(err.message);
@@ -57,30 +62,30 @@ app.post('/save-state', (req, res) => {
   });
 });
 
-// Lade Game State
 app.get('/load-state', (req, res) => {
   db.get('SELECT * FROM game_state ORDER BY id DESC LIMIT 1', (err, row) => {
     if (err) return res.status(500).send(err.message);
-    
-    if (row) {
-      res.json({
-        phase: row.phase,
-        participants: JSON.parse(row.participants),
-        drawnPlayers: JSON.parse(row.drawn_players),
-        teams: JSON.parse(row.teams),
-        currentBattle: JSON.parse(row.current_battle),
-        currentSlot: row.current_slot,
-        battleHistory: JSON.parse(row.battle_history),
-        eliminated: JSON.parse(row.eliminated),
-        round: row.round
-      });
-    } else {
-      res.json(null);
-    }
+    res.json(row ? {
+      phase: row.phase,
+      participants: JSON.parse(row.participants),
+      drawnPlayers: JSON.parse(row.drawn_players),
+      teams: JSON.parse(row.teams),
+      currentBattle: JSON.parse(row.current_battle),
+      currentSlot: row.current_slot,
+      battleHistory: JSON.parse(row.battle_history),
+      eliminated: JSON.parse(row.eliminated),
+      round: row.round
+    } : null);
   });
 });
 
-const PORT = 3001;
-app.listen(PORT, () => {
-  console.log(`Server läuft auf http://localhost:${PORT}`);
+// Fallback für Frontend-Routing
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Server starten
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server läuft auf Port ${PORT}`);
 });
